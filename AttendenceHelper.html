@@ -1,0 +1,332 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>One Day Attendance Helper - No Alerts</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    color: #fff;
+    margin-bottom: 10px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+    padding: 30px 40px;
+    max-width: 600px;
+    width: 100%;
+    position: relative;
+  }
+  input[type=text] {
+    width: 70%;
+    padding: 12px 15px;
+    font-size: 16px;
+    border: 2px solid #764ba2;
+    border-radius: 8px;
+    outline-offset: 2px;
+    transition: border-color 0.3s ease;
+  }
+  input[type=text]:focus {
+    border-color: #667eea;
+  }
+  button {
+    padding: 12px 18px;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    margin-left: 10px;
+  }
+  button:hover {
+    filter: brightness(0.9);
+  }
+  #addBtn {
+    background: #764ba2;
+    color: white;
+  }
+  #takeAttendBtn {
+    background: #667eea;
+    color: white;
+    margin-top: 25px;
+    width: 100%;
+  }
+  #clearBtn {
+    background: #e05b5b;
+    color: white;
+    margin-top: 15px;
+    width: 100%;
+  }
+  #studentList {
+    margin-top: 20px;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #764ba2;
+    border-radius: 8px;
+    padding: 15px;
+    background: #f9f9ff;
+  }
+  #studentList ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+  }
+  #studentList li {
+    font-size: 18px;
+    padding: 6px 4px;
+    border-bottom: 1px solid #ddd;
+  }
+  #studentList li:last-child {
+    border-bottom: none;
+  }
+  #report {
+    margin-top: 30px;
+    background: #f0f3ff;
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.25);
+    color: #333;
+  }
+
+  /* Attendance prompt overlay */
+  #attendancePrompt {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    z-index: 100;
+  }
+  #promptBox {
+    background: white;
+    padding: 25px 40px;
+    border-radius: 12px;
+    text-align: center;
+    max-width: 90%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  }
+  #promptBox p {
+    font-size: 22px;
+    margin-bottom: 25px;
+    color: #333;
+  }
+  #promptBox button {
+    width: 100px;
+    margin: 0 15px;
+  }
+  #promptYes {
+    background-color: #4caf50;
+    color: white;
+  }
+  #promptNo {
+    background-color: #e74c3c;
+    color: white;
+  }
+
+  /* Report Present/Absent side by side */
+  .attendance-columns {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  .attendance-column {
+    flex: 1 1 45%;
+    background: white;
+    border-radius: 10px;
+    padding: 15px 20px;
+    box-shadow: 0 5px 15px rgba(102,126,234,0.15);
+  }
+  .attendance-column h4 {
+    margin-top: 0;
+    color: #764ba2;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 6px;
+  }
+  .attendance-column ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 10px;
+  }
+  .attendance-column li {
+    font-size: 18px;
+    padding: 6px 2px;
+    border-bottom: 1px solid #eee;
+  }
+  .attendance-column li:last-child {
+    border-bottom: none;
+  }
+</style>
+</head>
+<body>
+
+<h1>One Day Attendance Helper</h1>
+
+<div class="container">
+  <div style="display: flex; flex-wrap: wrap; align-items: center;">
+    <input id="studentName" type="text" placeholder="Enter student name" autocomplete="off" />
+    <button id="addBtn" onclick="addStudent()">Add Student</button>
+  </div>
+
+  <div id="studentList" aria-live="polite" aria-label="List of students">
+    <strong>Students:</strong>
+    <ul id="studentsUl"></ul>
+  </div>
+
+  <button id="takeAttendBtn" style="display:none;" onclick="startAttendance()">Take Attendance</button>
+  <button id="clearBtn" style="display:none;" onclick="clearAll()">Clear All Data</button>
+
+  <div id="report" aria-live="polite" aria-label="Attendance report"></div>
+
+  <!-- Attendance prompt -->
+  <div id="attendancePrompt">
+    <div id="promptBox">
+      <p id="promptQuestion">Is [Name] here?</p>
+      <button id="promptYes">Yes</button>
+      <button id="promptNo">No</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let students = JSON.parse(localStorage.getItem('students')) || [];
+  students = students.filter(s => typeof s === 'string');
+
+  let attendanceToday = {};
+  let currentStudentIndex = 0;
+
+  function saveStudents() {
+    localStorage.setItem('students', JSON.stringify(students));
+  }
+
+  function updateStudentList() {
+    const ul = document.getElementById('studentsUl');
+    ul.innerHTML = '';
+    for (const s of students) {
+      const li = document.createElement('li');
+      li.textContent = s;
+      ul.appendChild(li);
+    }
+  }
+
+  function addStudent() {
+    const input = document.getElementById('studentName');
+    const name = input.value.trim();
+    if (!name) {
+      return; // silently ignore empty
+    }
+    if (students.some(s => typeof s === 'string' && s.toLowerCase() === name.toLowerCase())) {
+      input.value = '';
+      return; // ignore duplicates silently
+    }
+    students.push(name);
+    input.value = '';
+    saveStudents();
+    updateButtons();
+    updateStudentList();
+  }
+
+  function updateButtons() {
+    const show = students.length > 0;
+    document.getElementById('takeAttendBtn').style.display = show ? 'block' : 'none';
+    document.getElementById('clearBtn').style.display = show ? 'block' : 'none';
+    document.getElementById('report').innerHTML = '';
+  }
+
+  function startAttendance() {
+    if (students.length === 0) return;
+    attendanceToday = {};
+    currentStudentIndex = 0;
+    showPromptForStudent();
+  }
+
+  function showPromptForStudent() {
+    if (currentStudentIndex >= students.length) {
+      hidePrompt();
+      showReport();
+      return;
+    }
+    const prompt = document.getElementById('attendancePrompt');
+    const question = document.getElementById('promptQuestion');
+    question.textContent = `Is ${students[currentStudentIndex]} here?`;
+    prompt.style.display = 'flex';
+  }
+
+  function hidePrompt() {
+    document.getElementById('attendancePrompt').style.display = 'none';
+  }
+
+  document.getElementById('promptYes').addEventListener('click', () => {
+    attendanceToday[students[currentStudentIndex]] = 'Present';
+    currentStudentIndex++;
+    showPromptForStudent();
+  });
+
+  document.getElementById('promptNo').addEventListener('click', () => {
+    attendanceToday[students[currentStudentIndex]] = 'Absent';
+    currentStudentIndex++;
+    showPromptForStudent();
+  });
+
+  function showReport() {
+    const reportDiv = document.getElementById('report');
+    if (Object.keys(attendanceToday).length === 0) {
+      reportDiv.innerHTML = '<p>No attendance taken yet.</p>';
+      return;
+    }
+
+    const present = [];
+    const absent = [];
+
+    for (const [name, status] of Object.entries(attendanceToday)) {
+      if (status === 'Present') present.push(name);
+      else absent.push(name);
+    }
+
+    let html = `<h3>Attendance Report (Today)</h3>
+      <div class="attendance-columns">
+        <div class="attendance-column">
+          <h4>Present</h4>
+          <ul>${present.map(n => `<li>${n}</li>`).join('')}</ul>
+        </div>
+        <div class="attendance-column">
+          <h4>Absent</h4>
+          <ul>${absent.map(n => `<li>${n}</li>`).join('')}</ul>
+        </div>
+      </div>`;
+
+    reportDiv.innerHTML = html;
+  }
+
+  function clearAll() {
+    students = [];
+    attendanceToday = {};
+    saveStudents();
+    updateButtons();
+    updateStudentList();
+    document.getElementById('report').innerHTML = '';
+    hidePrompt();
+  }
+
+  updateButtons();
+  updateStudentList();
+</script>
+
+</body>
+</html>
